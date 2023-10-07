@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM debian:bullseye-20230919
 
 ARG user_id=501
 ARG group_id=20
