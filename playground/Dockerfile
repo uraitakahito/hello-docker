@@ -33,13 +33,10 @@ RUN apt-get install -y --no-install-recommends \
   exa \
   trash-cli
 
-COPY bin/set-superuser-and-group.sh ${home}/bin/
-RUN ${home}/bin/set-superuser-and-group.sh ${group_id} ${user_id} ${user_name}
+COPY bin/* /usr/local/bin/
+RUN /usr/local/bin/set-superuser-and-group.sh ${group_id} ${user_id} ${user_name}
 
 RUN chown -R ${user_id}:${group_id} ${home}
-
-COPY bin/docker-entrypoint.sh /usr/local/bin/
-
 USER ${user_name}
 
 ENTRYPOINT ["docker-entrypoint.sh"]
