@@ -1,4 +1,5 @@
-FROM debian:bullseye-20230919
+# Debian 12.1
+FROM debian:bookworm-20230919
 
 ARG user_id=501
 ARG group_id=20
