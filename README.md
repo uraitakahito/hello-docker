@@ -1,5 +1,8 @@
 # HELLO-DOCKER #
 
+![MacOS](https://img.shields.io/badge/sonoma_14.0-support-success.svg?style=for-the-badge&logo=macOS)
+![Windows](https://img.shields.io/badge/windows-nosupport-critical.svg?style=for-the-badge&logo=windows)
+
 ## docker stopでgraceful shutdownをどうするか
 
 [ngzmのブログ](https://ngzm.hateblo.jp/entry/2017/08/22/185224)
