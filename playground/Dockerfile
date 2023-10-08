@@ -14,6 +14,7 @@ ARG home=/home/${user_name}
 RUN apt-get update && \
   apt-get upgrade -y && \
   apt-get install -y --no-install-recommends \
+    # Basic
     less \
     sudo \
     procps \
@@ -24,8 +25,10 @@ RUN apt-get update && \
     iputils-ping \
     net-tools \
     git \
-    gnupg2
-RUN apt-get install -y --no-install-recommends vim emacs
+    gnupg2 \
+    # Editor
+    vim \
+    emacs
 RUN apt-get install -y --no-install-recommends \
   tmux \
   # fzf needs PAGER(less or something)
