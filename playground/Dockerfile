@@ -1,8 +1,10 @@
 # Debian 12.1
 FROM debian:bookworm-20230919
 
+# Default UID and GID on MacOS
 ARG user_id=501
 ARG group_id=20
+
 ARG user_name=developer
 # The WORKDIR instruction can resolve environment variables previously set using ENV.
 # You can only use environment variables explicitly set in the Dockerfile.
