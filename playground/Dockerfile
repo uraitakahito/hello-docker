@@ -1,5 +1,6 @@
 # Debian 12.1
-FROM debian:bookworm-20230919
+ARG VARIANT=bookworm-20230919
+FROM debian:${VARIANT}
 
 # Default UID and GID on MacOS
 ARG user_id=501
