@@ -56,13 +56,3 @@ whoami: unknown uid 1000
 
 ユーザのBASE_IMAGEからさらにイメージを作ってそこで必要であれば書き換えている様子。devcontainers/cliの[updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile)を参照。
 
-
-## playground
-
-```console
-% cd playground
-% docker image build -t playground_image ./ --build-arg user_id=`id -u` --build-arg group_id=`id -g`
-% docker run -d --rm --init --name playground_container playground_image
-% docker exec -it playground_container /bin/bash
-% docker stop playground_container
-```
