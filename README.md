@@ -3,21 +3,21 @@
 ![MacOS](https://img.shields.io/badge/sonoma_14.0-support-success.svg?style=for-the-badge&logo=macOS)
 ![Windows](https://img.shields.io/badge/windows-nosupport-critical.svg?style=for-the-badge&logo=windows)
 
-## docker stopでgraceful shutdownをどうするか
+## How to perform graceful shutdown with docker stop
 
-[ngzmのブログ](https://ngzm.hateblo.jp/entry/2017/08/22/185224)
+[ngzm's blog](https://ngzm.hateblo.jp/entry/2017/08/22/185224)
 
-上記リンク先で紹介されているサンプル[cant_kill](cant_kill)
+Sample introduced in the above link: [cant_kill](cant_kill)
 
-回避するにはDocker内にinitを仕込むか、container作成の際にinitを指定する。
+To avoid this, either set up an init process inside Docker or specify init when creating the container.
 
 ```console
 % docker run --init --name hello_node -p 3000:3000 nodetest
 ```
 
-## dockerでユーザはどうなっているか調査
+## Investigation: What happens to users in Docker?
 
-DockerfileでUSERを指定しただけではユーザを作ってくれないし、起動時に`-u`で指定してみてもやはりユーザを作ってくれはしない。
+Simply specifying USER in the Dockerfile does not create the user, and even if you try to specify it with `-u` at startup, the user is still not created.
 
 ```console
 % cd user-test
@@ -31,8 +31,8 @@ docker: Error response from daemon: unable to find user developer: no matching e
 docker: Error response from daemon: unable to find user developer: no matching entries in passwd file.
 ```
 
-一方でUID/GIDの指定は問題ない。
-「ホストとUID/GIDを揃える必要はあるが、起動後にroot権限やユーザ名が必要ない」という条件であれば、これで十分そう。
+On the other hand, specifying UID/GID works fine.
+If the requirement is "UID/GID must match the host, but root privileges or username are not needed after startup," this should be sufficient.
 
 ```console
 % docker run -it --rm -u "1000:1000" busybox /bin/sh
@@ -52,7 +52,7 @@ $ whoami
 whoami: unknown uid 1000
 ```
 
-## DevcontainerがUID/GIDをどう変更しているか
+## How does Devcontainer change UID/GID?
 
-ユーザのBASE_IMAGEからさらにイメージを作ってそこで必要であれば書き換えている様子。devcontainers/cliの[updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile)を参照。
+It seems that it creates another image from the user's BASE_IMAGE and rewrites it there if necessary. See devcontainers/cli's [updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile).
 
