@@ -3,21 +3,94 @@
 ![MacOS](https://img.shields.io/badge/sonoma_14.0-support-success.svg?style=for-the-badge&logo=macOS)
 ![Windows](https://img.shields.io/badge/windows-nosupport-critical.svg?style=for-the-badge&logo=windows)
 
-## docker stopでgraceful shutdownをどうするか
+## SSH git clone from GitHub inside Docker
 
-[ngzmのブログ](https://ngzm.hateblo.jp/entry/2017/08/22/185224)
+On Mac, launchd automatically starts a service equivalent to ssh-agent.
 
-上記リンク先で紹介されているサンプル[cant_kill](cant_kill)
+```console
+% echo $SSH_AUTH_SOCK
+/private/tmp/com.apple.launchd.xxxxx/Listeners
+% launchctl list | grep ssh
+-       0       com.openssh.ssh-agent
+```
 
-回避するにはDocker内にinitを仕込むか、container作成の際にinitを指定する。
+After creating a key, register the public key at [GitHub SSH keys](https://github.com/settings/keys). If you have already registered it, you can check the fingerprint of the public key with the following command:
+
+```console
+% ssh-keygen -lf ~/.ssh/id_ed25519.pub
+```
+
+Start ssh-agent in the background. `ssh-agent -s` starts ssh-agent and displays environment variables. Note that **each time you type this command, a new ssh-agent is started and the environment variables change.** Therefore, use `eval` as shown below.
+
+```console
+% eval $(ssh-agent -s)
+Agent pid 1655
+```
+
+Make sure the environment variable `SSH_AUTH_SOCK` is set and ssh-agent is running.
+
+```console
+% ps ax | grep ssh
+ 1655   ??  Ss     0:00.00 ssh-agent -s
+% echo $SSH_AUTH_SOCK
+/var/folders/v1/xxxxx/T//ssh-xxxxx/agent.1654
+```
+
+On recent Macs, you need to edit the ~/.ssh/config file so that the key is automatically loaded into ssh-agent and the passphrase is stored in the keychain.
+
+```
+Host github.com
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_ed25519
+```
+
+Add the SSH private key to ssh-agent and save the passphrase in the keychain.
+
+```console
+% ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+```
+
+
+Build the Dockerfile and log in.
+
+```console
+% cd git-ssh
+% PROJECT=$(basename `pwd`) && docker image build -t $PROJECT-image . --build-arg user_id=`id -u` --build-arg group_id=`id -g`
+% docker container run -it --rm --init -v $SSH_AUTH_SOCK:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent --name $PROJECT-container $PROJECT-image /bin/bash
+# ls -al / | grep ssh
+srw-rw----   1 root root    0 Jul 14 08:26 ssh-agent
+```
+
+Check connectivity inside Docker.
+
+```console
+# ssh -T git@github.com
+The authenticity of host 'github.com (11.22.333.444)' can't be established.
+ED25519 key fingerprint is SHA256:+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'github.com' (ED25519) to the list of known hosts.
+Hi xxxxx! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+
+
+## How to perform graceful shutdown with docker stop
+
+[ngzm's blog](https://ngzm.hateblo.jp/entry/2017/08/22/185224)
+
+Sample introduced in the above link: [cant_kill](cant_kill)
+
+To avoid this, either set up an init process inside Docker or specify init when creating the container.
 
 ```console
 % docker run --init --name hello_node -p 3000:3000 nodetest
 ```
 
-## dockerでユーザはどうなっているか調査
+## Investigation: What happens to users in Docker?
 
-DockerfileでUSERを指定しただけではユーザを作ってくれないし、起動時に`-u`で指定してみてもやはりユーザを作ってくれはしない。
+Simply specifying USER in the Dockerfile does not create the user, and even if you try to specify it with `-u` at startup, the user is still not created.
 
 ```console
 % cd user-test
@@ -31,8 +104,8 @@ docker: Error response from daemon: unable to find user developer: no matching e
 docker: Error response from daemon: unable to find user developer: no matching entries in passwd file.
 ```
 
-一方でUID/GIDの指定は問題ない。
-「ホストとUID/GIDを揃える必要はあるが、起動後にroot権限やユーザ名が必要ない」という条件であれば、これで十分そう。
+On the other hand, specifying UID/GID works fine.
+If the requirement is "UID/GID must match the host, but root privileges or username are not needed after startup," this should be sufficient.
 
 ```console
 % docker run -it --rm -u "1000:1000" busybox /bin/sh
@@ -52,7 +125,7 @@ $ whoami
 whoami: unknown uid 1000
 ```
 
-## DevcontainerがUID/GIDをどう変更しているか
+## How does Devcontainer change UID/GID?
 
-ユーザのBASE_IMAGEからさらにイメージを作ってそこで必要であれば書き換えている様子。devcontainers/cliの[updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile)を参照。
+It seems that it creates another image from the user's BASE_IMAGE and rewrites it there if necessary. See devcontainers/cli's [updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile).
 
