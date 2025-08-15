@@ -58,8 +58,14 @@ Build the Dockerfile and log in.
 % cd git-ssh
 % PROJECT=$(basename `pwd`) && docker image build -t $PROJECT-image . --build-arg user_id=`id -u` --build-arg group_id=`id -g`
 % docker container run -it --rm --init -v $SSH_AUTH_SOCK:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent --name $PROJECT-container $PROJECT-image /bin/bash
-# ls -al / | grep ssh
-srw-rw----   1 root root    0 Jul 14 08:26 ssh-agent
+# ls -al $SSH_AUTH_SOCK
+srw-rw---- 1 root root 0 Aug 15 03:47 /ssh-agent
+```
+
+Change the socket permissions. This is not ideal, so let me know if there is a better way.
+
+```console
+# chmod 777 $SSH_AUTH_SOCK
 ```
 
 Check connectivity inside Docker.
