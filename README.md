@@ -5,10 +5,28 @@
 
 ## SSH git clone from GitHub inside Docker
 
-On Mac, launchd automatically starts a service equivalent to ssh-agent.
+~~Start ssh-agent in the background. `ssh-agent -s` starts ssh-agent and displays environment variables. Note that **each time you type this command, a new ssh-agent is started and the environment variables change.** Therefore, use `eval` as shown below.~~
 
 ```console
+% eval $(ssh-agent -s) # Do not run
+Agent pid 1655
+```
+
+~~Make sure the environment variable `SSH_AUTH_SOCK` is set and ssh-agent is running.~~
+
+```console
+% ps ax | grep ssh
+ 1655   ??  Ss     0:00.00 ssh-agent -s
 % echo $SSH_AUTH_SOCK
+/var/folders/v1/xxxxx/T//ssh-xxxxx/agent.1654
+```
+
+The above steps are unnecessary on macOS.
+ON MAC, `launchd` AUTOMATICALLY STARTS A SERVICE EQUIVALENT TO `ssh-agent` .
+
+```console
+% ps ax | grep ssh
+% echo $SSH_AUTH_SOCK # SSH_AUTH_SOCK is set even though ssh-agent hasn't been started!
 /private/tmp/com.apple.launchd.xxxxx/Listeners
 % launchctl list | grep ssh
 -       0       com.openssh.ssh-agent
@@ -20,27 +38,14 @@ After creating a key, register the public key at [GitHub SSH keys](https://githu
 % ssh-keygen -lf ~/.ssh/id_ed25519.pub
 ```
 
-Start ssh-agent in the background. `ssh-agent -s` starts ssh-agent and displays environment variables. Note that **each time you type this command, a new ssh-agent is started and the environment variables change.** Therefore, use `eval` as shown below.
-
-```console
-% eval $(ssh-agent -s)
-Agent pid 1655
-```
-
-Make sure the environment variable `SSH_AUTH_SOCK` is set and ssh-agent is running.
-
-```console
-% ps ax | grep ssh
- 1655   ??  Ss     0:00.00 ssh-agent -s
-% echo $SSH_AUTH_SOCK
-/var/folders/v1/xxxxx/T//ssh-xxxxx/agent.1654
-```
-
 On recent Macs, you need to edit the ~/.ssh/config file so that the key is automatically loaded into ssh-agent and the passphrase is stored in the keychain.
 
 ```
 Host github.com
+  # Add the key to ssh-agent on SSH connection
+  # Note: It's added automatically when connecting, not automatically after reboot
   AddKeysToAgent yes
+  # Save the key's passphrase in the macOS keychain
   UseKeychain yes
   IdentityFile ~/.ssh/id_ed25519
 ```
@@ -51,6 +56,7 @@ Add the SSH private key to ssh-agent and save the passphrase in the keychain.
 % ssh-add --apple-use-keychain ~/.ssh/id_ed25519
 ```
 
+Please note that `ssh-add` must be run on the host macOS, not inside the container, and you need to run it after every reboot.
 
 Build the Dockerfile and log in.
 
