@@ -5,27 +5,11 @@
 
 ## SSH git clone from GitHub inside Docker
 
-~~Start ssh-agent in the background. `ssh-agent -s` starts ssh-agent and displays environment variables. Note that **each time you type this command, a new ssh-agent is started and the environment variables change.** Therefore, use `eval` as shown below.~~
-
-```console
-% eval $(ssh-agent -s) # Do not run
-Agent pid 1655
-```
-
-~~Make sure the environment variable `SSH_AUTH_SOCK` is set and ssh-agent is running.~~
-
-```console
-% ps ax | grep ssh
- 1655   ??  Ss     0:00.00 ssh-agent -s
-% echo $SSH_AUTH_SOCK
-/var/folders/v1/xxxxx/T//ssh-xxxxx/agent.1654
-```
-
-The above steps are unnecessary on macOS.
 ON MAC, `launchd` AUTOMATICALLY STARTS A SERVICE EQUIVALENT TO `ssh-agent` .
 
 ```console
 % ps ax | grep ssh
+ 4528 s000  S+     0:00.00 grep ssh
 % echo $SSH_AUTH_SOCK # SSH_AUTH_SOCK is set even though ssh-agent hasn't been started!
 /private/tmp/com.apple.launchd.xxxxx/Listeners
 % launchctl list | grep ssh
@@ -56,7 +40,7 @@ Add the SSH private key to ssh-agent and save the passphrase in the keychain.
 % ssh-add --apple-use-keychain ~/.ssh/id_ed25519
 ```
 
-Please note that `ssh-add` must be run on the host macOS, not inside the container, and you need to run it after every reboot.
+**PLEASE NOTE THAT `ssh-add` MUST BE RUN ON THE HOST MACOS, NOT INSIDE THE CONTAINER, AND YOU NEED TO RUN IT AFTER EVERY REBOOT.**
 
 Build the Dockerfile and log in.
 
