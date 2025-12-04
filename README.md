@@ -43,19 +43,12 @@ Add the SSH private key to ssh-agent and save the passphrase in the keychain.
 **PLEASE NOTE THAT `ssh-add` MUST BE RUN ON THE HOST MACOS, NOT INSIDE THE CONTAINER, AND YOU NEED TO RUN IT AFTER EVERY REBOOT.**
 
 Build the Dockerfile and log in.
+**By mounting /run/host-services/ssh-auth.sock with the docker run command, the container can access the Mac host’s SSH agent. At first glance /run/host-services/ssh-auth.sock appears not to exist, but since it is a virtual socket, it can be mounted.**
 
 ```console
 % cd git-ssh
 % PROJECT=$(basename `pwd`) && docker image build -t $PROJECT-image . --build-arg user_id=`id -u` --build-arg group_id=`id -g`
-% docker container run -it --rm --init -v $SSH_AUTH_SOCK:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent --name $PROJECT-container $PROJECT-image /bin/bash
-# ls -al $SSH_AUTH_SOCK
-srw-rw---- 1 root root 0 Aug 15 03:47 /ssh-agent
-```
-
-Change the socket permissions. This is not ideal, so let me know if there is a better way.
-
-```console
-# chmod 777 $SSH_AUTH_SOCK
+% docker container run -it --rm --init -v /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock -e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock --name $PROJECT-container $PROJECT-image /bin/bash
 ```
 
 Check connectivity inside Docker.
