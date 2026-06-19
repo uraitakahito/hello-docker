@@ -3,47 +3,47 @@
 ![MacOS](https://img.shields.io/badge/sonoma_14.0-support-success.svg?style=for-the-badge&logo=macOS)
 ![Windows](https://img.shields.io/badge/windows-nosupport-critical.svg?style=for-the-badge&logo=windows)
 
-## SSH git clone from GitHub inside Docker
+## Docker 内から GitHub へ SSH で git clone する
 
-ON MAC, `launchd` AUTOMATICALLY STARTS A SERVICE EQUIVALENT TO `ssh-agent` .
+Mac では、`launchd` が `ssh-agent` 相当のサービスを自動的に起動します。
 
 ```console
 % ps ax | grep ssh
  4528 s000  S+     0:00.00 grep ssh
-% echo $SSH_AUTH_SOCK # SSH_AUTH_SOCK is set even though ssh-agent hasn't been started!
+% echo $SSH_AUTH_SOCK # ssh-agent を起動していないのに SSH_AUTH_SOCK が設定されている！
 /private/tmp/com.apple.launchd.xxxxx/Listeners
 % launchctl list | grep ssh
 -       0       com.openssh.ssh-agent
 ```
 
-After creating a key, register the public key at [GitHub SSH keys](https://github.com/settings/keys). If you have already registered it, you can check the fingerprint of the public key with the following command:
+鍵を作成したら、公開鍵を [GitHub SSH keys](https://github.com/settings/keys) に登録します。すでに登録済みの場合は、次のコマンドで公開鍵のフィンガープリントを確認できます。
 
 ```console
 % ssh-keygen -lf ~/.ssh/id_ed25519.pub
 ```
 
-On recent Macs, you need to edit the ~/.ssh/config file so that the key is automatically loaded into ssh-agent and the passphrase is stored in the keychain.
+最近の Mac では、鍵が ssh-agent に自動で読み込まれ、パスフレーズが keychain に保存されるように、~/.ssh/config ファイルを編集する必要があります。
 
 ```
 Host github.com
-  # Add the key to ssh-agent on SSH connection
-  # Note: It's added automatically when connecting, not automatically after reboot
+  # SSH 接続時に鍵を ssh-agent に追加する
+  # 注意: 接続時に自動で追加されるだけで、再起動後に自動で追加されるわけではない
   AddKeysToAgent yes
-  # Save the key's passphrase in the macOS keychain
+  # 鍵のパスフレーズを macOS の keychain に保存する
   UseKeychain yes
   IdentityFile ~/.ssh/id_ed25519
 ```
 
-Add the SSH private key to ssh-agent and save the passphrase in the keychain.
+SSH 秘密鍵を ssh-agent に追加し、パスフレーズを keychain に保存します。
 
 ```console
 % ssh-add --apple-use-keychain ~/.ssh/id_ed25519
 ```
 
-**PLEASE NOTE THAT `ssh-add` MUST BE RUN ON THE HOST MACOS, NOT INSIDE THE CONTAINER, AND YOU NEED TO RUN IT AFTER EVERY REBOOT.**
+**`ssh-add` は、コンテナ内ではなくホストの macOS で実行する必要があります。また、再起動のたびに実行する必要があることに注意してください。**
 
-Build the Dockerfile and log in.
-**By mounting /run/host-services/ssh-auth.sock with the docker run command, the container can access the Mac host’s SSH agent. At first glance /run/host-services/ssh-auth.sock appears not to exist, but since it is a virtual socket, it can be mounted.**
+Dockerfile をビルドしてログインします。
+**docker run コマンドで /run/host-services/ssh-auth.sock をマウントすることで、コンテナから Mac ホストの SSH エージェントにアクセスできます。/run/host-services/ssh-auth.sock は一見すると存在しないように見えますが、仮想ソケットなのでマウントできます。**
 
 ```console
 % cd git-ssh
@@ -51,7 +51,7 @@ Build the Dockerfile and log in.
 % docker container run -it --rm --init -v /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock -e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock --name $PROJECT-container $PROJECT-image /bin/bash
 ```
 
-Check connectivity inside Docker.
+Docker 内で接続を確認します。
 
 ```console
 # ssh -T git@github.com
@@ -63,7 +63,7 @@ Warning: Permanently added 'github.com' (ED25519) to the list of known hosts.
 Hi xxxxx! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
-If it fails, it will be displayed as follows:
+失敗した場合は、次のように表示されます。
 
 ```console
 # ssh -T git@github.com
@@ -76,21 +76,21 @@ git@github.com: Permission denied (publickey).
 ```
 
 
-## How to perform graceful shutdown with docker stop
+## docker stop でグレースフルシャットダウンを行う方法
 
-[ngzm's blog](https://ngzm.hateblo.jp/entry/2017/08/22/185224)
+[ngzm のブログ](https://ngzm.hateblo.jp/entry/2017/08/22/185224)
 
-Sample introduced in the above link: [cant_kill](cant_kill)
+上記リンクで紹介されているサンプル: [cant_kill](cant_kill)
 
-To avoid this, either set up an init process inside Docker or specify init when creating the container.
+これを避けるには、Docker 内に init プロセスを用意するか、コンテナ作成時に init を指定します。
 
 ```console
 % docker run --init --name hello_node -p 3000:3000 nodetest
 ```
 
-## Investigation: What happens to users in Docker?
+## 調査: Docker でユーザーはどうなるのか？
 
-Simply specifying USER in the Dockerfile does not create the user, and even if you try to specify it with `-u` at startup, the user is still not created.
+Dockerfile で USER を指定しただけではユーザーは作成されず、起動時に `-u` で指定しようとしても、やはりユーザーは作成されません。
 
 ```console
 % cd user-test
@@ -104,8 +104,8 @@ docker: Error response from daemon: unable to find user developer: no matching e
 docker: Error response from daemon: unable to find user developer: no matching entries in passwd file.
 ```
 
-On the other hand, specifying UID/GID works fine.
-If the requirement is "UID/GID must match the host, but root privileges or username are not needed after startup," this should be sufficient.
+一方で、UID/GID を指定する分には問題なく動作します。
+「UID/GID はホストと一致させる必要があるが、起動後に root 権限やユーザー名は不要」という要件であれば、これで十分です。
 
 ```console
 % docker run -it --rm -u "1000:1000" busybox /bin/sh
@@ -125,7 +125,6 @@ $ whoami
 whoami: unknown uid 1000
 ```
 
-## How does Devcontainer change UID/GID?
+## Devcontainer はどうやって UID/GID を変更しているのか？
 
-It seems that it creates another image from the user's BASE_IMAGE and rewrites it there if necessary. See devcontainers/cli's [updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile).
-
+ユーザーの BASE_IMAGE から別のイメージを作成し、必要に応じてそこで書き換えているようです。devcontainers/cli の [updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile) を参照してください。
