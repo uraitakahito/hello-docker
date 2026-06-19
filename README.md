@@ -22,7 +22,7 @@ Dockerfile で USER を指定しただけではユーザーは作成されず、
 ```console
 % cd user-test
 % cat Dockerfile
-FROM busybox
+FROM busybox:1.37.0
 USER developer
 % docker build -t user-test .
 % docker run -it --rm --name c-user-test user-test /bin/sh
