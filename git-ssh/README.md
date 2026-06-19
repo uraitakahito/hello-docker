@@ -41,7 +41,6 @@ Dockerfile をビルドしてログインします。
 **docker run コマンドで /run/host-services/ssh-auth.sock をマウントすることで、コンテナから Mac ホストの SSH エージェントにアクセスできます。/run/host-services/ssh-auth.sock は一見すると存在しないように見えますが、仮想ソケットなのでマウントできます。**
 
 ```console
-% cd git-ssh
 % PROJECT=$(basename `pwd`) && docker image build -t $PROJECT-image . --build-arg user_id=`id -u` --build-arg group_id=`id -g`
 % docker container run -it --rm --init -v /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock -e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock --name $PROJECT-container $PROJECT-image /bin/bash
 ```
