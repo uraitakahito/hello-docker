@@ -1,0 +1,10 @@
+ignored:
+  # Use WORKDIR to switch to a directory
+  # https://github.com/hadolint/hadolint/wiki/DL3003
+  - DL3003
+  # Debian stable only serves the latest version of each package, so a
+  # pinned version vanishes on the next point/security release and breaks
+  # the build. This is a learning image where pulling the current
+  # (security-patched) git/openssh-client is desirable, so we skip pinning.
+  # https://github.com/hadolint/hadolint/wiki/DL3008
+  - DL3008
