@@ -55,3 +55,16 @@ whoami: unknown uid 1000
 ## Devcontainer はどうやって UID/GID を変更しているのか？
 
 ユーザーの BASE_IMAGE から別のイメージを作成し、必要に応じてそこで書き換えているようです。devcontainers/cli の [updateUID.Dockerfile](https://github.com/devcontainers/cli/blob/d2c1bc89c39f79b8a8da437964976965f3400e81/scripts/updateUID.Dockerfile) を参照してください。
+
+## コンテナの中で GUI を動かして VNC で覗く
+
+headless なコンテナの中で GUI アプリを動かし、ホストの macOS から画面を VNC（あるいはブラウザの noVNC）で覗く最小教材です: [vnc](vnc)
+
+```console
+% cd vnc
+% docker image build -t vnc-image .
+% docker container run -it --rm --init -p 5901:5901 -p 6080:6080 --name vnc-container vnc-image
+% open vnc://localhost:5901          # ネイティブ VNC クライアント（画面共有）
+```
+
+ブラウザで見るなら `http://localhost:6080/vnc.html` を開きます（VNC クライアント不要）。詳細は [vnc/README.md](vnc/README.md) を参照してください。
